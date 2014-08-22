@@ -1,20 +1,27 @@
 package org.codefu.p3widescreen;
 
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.*;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import static javax.swing.SwingWorker.StateValue;
 
 public class App
 {
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+    private static java.util.logging.Logger packageLogger;
     private static JTextField executableTextField;
-    private static Logger logger = Logger.getLogger("P3WideScreen");
 
     private static void createGUI() {
         JPanel contentArea = new JPanel();
@@ -35,11 +42,19 @@ public class App
         patchButton.addActionListener(actionEvent -> {
             patchButton.setEnabled(false);
             PatchWorker patchButtonWorker = new PatchWorker(
-                executableTextField.getText(), logger);
+                executableTextField.getText());
             patchButtonWorker.addPropertyChangeListener(changeEvent -> {
                 if (changeEvent.getPropertyName().equals("state")
                     && changeEvent.getNewValue() == StateValue.DONE) {
+                    packageLogger.info("patch control returned");
                     patchButton.setEnabled(true);
+                    // Want to make sure no errors escape us.  XXX should
+                    // maybe do better here before release.
+                    try {
+                        patchButtonWorker.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
             patchButtonWorker.execute();
@@ -88,8 +103,8 @@ public class App
                                      formatMessage(record));
             }
         });
-        logger.addHandler(handler);
-        logger.setUseParentHandlers(false);
+        packageLogger.addHandler(handler);
+        packageLogger.setUseParentHandlers(false);
     }
 
     private static void browseForExecutable(ActionEvent actionEvent) {
@@ -119,6 +134,11 @@ public class App
     }
 
     public static void main(String[] args) {
+        // Set log level for our whole package.
+        String packageName = App.class.getPackage().getName();
+        packageLogger = java.util.logging.Logger.getLogger(packageName);
+        packageLogger.setLevel(Level.FINEST);
+        // Hand it over to Swing.
         SwingUtilities.invokeLater(App::createGUI);
     }
 
