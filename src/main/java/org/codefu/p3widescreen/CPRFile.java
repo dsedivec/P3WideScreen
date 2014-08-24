@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.HashMap;
 
-public class CPRFile {
+class CPRFile {
     private static final Logger logger = LoggerFactory.getLogger(CPRFile.class);
 
     private final RandomAccessFile fp;
