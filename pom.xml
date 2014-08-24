@@ -41,5 +41,10 @@
             <artifactId>slf4j-jdk14</artifactId>
             <version>1.7.7</version>
         </dependency>
+        <dependency>
+            <groupId>com.mortennobel</groupId>
+            <artifactId>java-image-scaling</artifactId>
+            <version>0.8.5</version>
+        </dependency>
     </dependencies>
 </project>

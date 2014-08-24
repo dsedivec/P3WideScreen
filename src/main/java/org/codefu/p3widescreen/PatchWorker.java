@@ -1,9 +1,13 @@
 package org.codefu.p3widescreen;
 
+import com.mortennobel.imagescaling.AdvancedResizeOp;
+import com.mortennobel.imagescaling.ResampleOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 
 class PatchWorker extends SwingWorker<Void, Void> {
@@ -38,6 +42,13 @@ class PatchWorker extends SwingWorker<Void, Void> {
         */
 
         CPRFile cprFile = new CPRFile(dataArchiveFile);
+        InputStream worldMap =
+            cprFile.getFile("images\\Vollansichtskarte1280.bmp");
+        BufferedImage original = ImageIO.read(worldMap);
+        ResampleOp resampleOp = new ResampleOp(1440, 900);
+        resampleOp.setUnsharpenMask(AdvancedResizeOp.UnsharpenMask.Normal);
+        BufferedImage resized = resampleOp.filter(original, null);
+        ImageIO.write(resized, "bmp", new File("/tmp/resized.bmp"));
 
         return null;
     }
