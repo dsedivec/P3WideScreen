@@ -7,6 +7,10 @@ import java.io.*;
 import java.util.HashMap;
 
 class CPRFile {
+    // We use this for both file names as well as text files extracted
+    // from the archive.
+    public static final String CHARSET = "ISO-8859-1";
+
     private static final Logger logger = LoggerFactory.getLogger(CPRFile.class);
 
     private final RandomAccessFile fp;
@@ -106,10 +110,10 @@ class CPRFile {
             buffer.write(b);
         }
         // They actually use ISO-8859-1 in at least one file name.
-        return buffer.toString("ISO-8859-1");
+        return buffer.toString(CHARSET);
     }
 
-    public InputStream getFile(String path) throws IOException {
+    public InputStream getInputStream(String path) throws IOException {
         IndexEntry indexEntry = index.get(path);
         if (indexEntry == null) {
             throw new RuntimeException(String.format(
@@ -124,5 +128,9 @@ class CPRFile {
                 indexEntry.length, numBytes));
         }
         return new ByteArrayInputStream(data);
+    }
+
+    public Reader getReader (String path) throws IOException {
+        return new InputStreamReader(getInputStream(path), CHARSET);
     }
 }

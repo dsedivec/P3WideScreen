@@ -9,6 +9,8 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -24,12 +26,16 @@ public class App
     private static JTextField executableTextField;
 
     private static void createGUI() {
+        // TODO: Set order that tab moves through controls?
         JPanel contentArea = new JPanel();
         contentArea.setLayout(new MigLayout());
         contentArea.add(new JLabel("Patrician 3 executable:"));
         executableTextField = new JTextField(20);
         contentArea.add(executableTextField, "pushx, grow");
         JButton selectExecutableButton = new JButton("Browse");
+        // TODO: Really need a clear button.
+        // TODO: Browse needs to start at the file, if any, already entered
+        // in the text box.
         selectExecutableButton.addActionListener(App::browseForExecutable);
         contentArea.add(selectExecutableButton, "wrap");
         contentArea.add(new JLabel("Width:"), "align right");
@@ -38,11 +44,15 @@ public class App
         contentArea.add(new JLabel("Height:"));
         JTextField height = new JTextField(4);
         contentArea.add(height, "wrap");
+        // TODO: Don't enable patch button until all necessary fields are
+        // filled in.
         JButton patchButton = new JButton("Patch");
         patchButton.addActionListener(actionEvent -> {
             patchButton.setEnabled(false);
             PatchWorker patchButtonWorker = new PatchWorker(
-                executableTextField.getText());
+                executableTextField.getText(),
+                Integer.parseInt(width.getText()),
+                Integer.parseInt(height.getText()));
             patchButtonWorker.addPropertyChangeListener(changeEvent -> {
                 if (changeEvent.getPropertyName().equals("state")
                     && changeEvent.getNewValue() == StateValue.DONE) {
@@ -53,7 +63,8 @@ public class App
                     try {
                         patchButtonWorker.get();
                     } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
+                        logger.error("exception encountered during patching",
+                                     e);
                     }
                 }
             });
@@ -77,13 +88,26 @@ public class App
 
     private static void setUpLogging(JTextArea logArea) {
         Handler handler = new Handler() {
+            public void appendToLogArea(LogRecord record) {
+                // TODO: This isn't always scrolling to the bottom.  Try
+                // running the app twice.
+                String message = getFormatter().format(record);
+                logArea.append(message);
+                Throwable throwable = record.getThrown();
+                if (throwable != null) {
+                    StringWriter stringWriter = new StringWriter();
+                    PrintWriter printWriter = new PrintWriter(stringWriter);
+                    throwable.printStackTrace(printWriter);
+                    logArea.append(stringWriter.toString());
+                }
+            }
+
             @Override
             public void publish(LogRecord record) {
-                String message = getFormatter().format(record);
                 if (SwingUtilities.isEventDispatchThread()) {
-                    logArea.append(message);
+                    appendToLogArea(record);
                 } else {
-                    SwingUtilities.invokeLater(() -> logArea.append(message));
+                    SwingUtilities.invokeLater(() -> appendToLogArea(record));
                 }
             }
 

@@ -90,7 +90,14 @@ class DWordBinaryPatch {
 
     public void patch(RandomAccessFile file, int... patchValues)
             throws IOException {
-        if (patchValues.length != numValuesToFillIn) {
+        // We allow you to pass in more values than necessary which
+        // makes it easy to pass in {width, height} for every patch
+        // in a loop in PatchWorker.  All patches need width first.
+        // Some also need height, second.
+        //
+        // A better person would do something like what I did in
+        // INIPatcher, which does named substitutions like $width.
+        if (patchValues.length < numValuesToFillIn) {
             throw new RuntimeException(String.format(
                 "expected %d value(s) to fill in but got %d instead",
                 numValuesToFillIn, patchValues.length));
