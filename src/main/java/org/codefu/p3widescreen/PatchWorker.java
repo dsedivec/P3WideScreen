@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.HashMap;
 
 class PatchWorker extends SwingWorker<Void, Void> {
@@ -72,6 +73,25 @@ class PatchWorker extends SwingWorker<Void, Void> {
         this.height = height;
     }
 
+    private void backUpFile(File file) throws IOException {
+        File directory = file.getParentFile();
+        String baseName = file.getName();
+        File backupFile = new File(directory, baseName + ".bak");
+        int suffix = 0;
+        while (backupFile.exists()) {
+            // Arbitrarily chosen limit of 100.
+            if (++suffix > 100) {
+                throw new RuntimeException(String.format(
+                    "can't find an available backup file name for %s", file));
+            }
+            backupFile =
+                new File(directory,
+                         String.format("%s.%02d.bak", baseName, suffix));
+        }
+        logger.info("backing up {} to {}", file, backupFile);
+        Files.copy(file.toPath(), backupFile.toPath());
+    }
+
     private boolean prePatchChecks() throws IOException {
         boolean checksPassed = true;
         // Look at the calculations done on width and height in
@@ -127,11 +147,13 @@ class PatchWorker extends SwingWorker<Void, Void> {
     }
 
     private void patchExecutable() throws IOException {
+        backUpFile(executableFile);
         logger.info("patching {}", executableFile);
-        RandomAccessFile executable =
-            new RandomAccessFile(executableFile, "rw");
-        for (DWordBinaryPatch patch : executablePatches) {
-            patch.patch(executable, width, height);
+        try (RandomAccessFile executable =
+                 new RandomAccessFile(executableFile, "rw")) {
+            for (DWordBinaryPatch patch : executablePatches) {
+                patch.patch(executable, width, height);
+            }
         }
     }
 
@@ -160,12 +182,17 @@ class PatchWorker extends SwingWorker<Void, Void> {
                                INIPatcher patcher,
                                HashMap<String, Object> substitutions)
             throws IOException {
+        File outputFile = new File(scriptsDirectory, iniFileName);
+        if (outputFile.exists()) {
+            backUpFile(outputFile);
+        }
         logger.info("producing patched {}", iniFileName);
-        Reader origAccelMap = cprFile.getReader("scripts\\" + iniFileName);
-        Writer patchedAccelMap = new OutputStreamWriter(
-            new FileOutputStream(new File(scriptsDirectory, iniFileName)),
-            CPRFile.CHARSET);
-        patcher.patch(origAccelMap, patchedAccelMap, substitutions);
+        try (Reader origAccelMap = cprFile.getReader("scripts\\" + iniFileName);
+             Writer patchedAccelMap =
+                 new OutputStreamWriter(new FileOutputStream(outputFile),
+                                        CPRFile.CHARSET)) {
+            patcher.patch(origAccelMap, patchedAccelMap, substitutions);
+        }
     }
 
     private void createResizedImages(CPRFile cprFile) throws IOException {
@@ -182,6 +209,10 @@ class PatchWorker extends SwingWorker<Void, Void> {
     private void writeResizedImage(CPRFile cprFile, String fileName,
                                    int width, int height)
             throws IOException {
+        File outputBMP = new File(imagesDirectory, fileName);
+        if (outputBMP.exists()) {
+            backUpFile(outputBMP);
+        }
         logger.info("resizing {} to {}x{}", fileName, width, height);
         InputStream originalImageStream =
             cprFile.getInputStream("images\\" + fileName);
@@ -189,8 +220,7 @@ class PatchWorker extends SwingWorker<Void, Void> {
         ResampleOp resampleOp = new ResampleOp(width, height);
         resampleOp.setUnsharpenMask(AdvancedResizeOp.UnsharpenMask.Normal);
         BufferedImage resized = resampleOp.filter(original, null);
-        File worldMapBMP = new File(imagesDirectory, fileName);
-        ImageIO.write(resized, "bmp", worldMapBMP);
+        ImageIO.write(resized, "bmp", outputBMP);
     }
 
 }
