@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.text.DefaultCaret;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
@@ -48,8 +49,6 @@ public class App
         gameDirectoryTextField = new JTextField(20);
         contentArea.add(gameDirectoryTextField, "pushx, grow");
         JButton selectExecutableButton = new JButton("Browse");
-        // TODO: Browse needs to start at the file, if any, already entered
-        // in the text box.
         selectExecutableButton.addActionListener(App::browseForGameDirectory);
         contentArea.add(selectExecutableButton, "wrap");
         contentArea.add(new JLabel("Width:"), "align right");
@@ -65,6 +64,9 @@ public class App
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
+        // Always scroll to bottom on append.
+        DefaultCaret caret = (DefaultCaret)logArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         JScrollPane scrollPane = new JScrollPane(logArea);
         contentArea.add(scrollPane, "span, pushy, grow, wrap");
         JButton clearButton = new JButton("Clear log");
@@ -120,8 +122,6 @@ public class App
     private static void setUpLogging(JTextArea logArea) {
         Handler handler = new Handler() {
             public void appendToLogArea(LogRecord record) {
-                // TODO: This isn't always scrolling to the bottom.  Try
-                // running the app twice.
                 String message = getFormatter().format(record);
                 logArea.append(message);
                 //noinspection ThrowableResultOfMethodCallIgnored
@@ -172,6 +172,12 @@ public class App
         fc.setDialogTitle("Select your Patrician 3 directory");
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fc.setAcceptAllFileFilterUsed(false);
+        File currentDirectory = new File(gameDirectoryTextField.getText());
+        // This doesn't really work with directories, but at least it puts
+        // you in the right parent directory.  I tried the scary solution
+        // given at http://stackoverflow.com/a/9119414/2305480 but it
+        // didn't work for me.
+        fc.setSelectedFile(currentDirectory);
         // Hack to make JFileChooser show something in its stupid
         // "File format" combo box.  I got this idea from Stack Overflow.
         fc.setFileFilter(new FileFilter() {
