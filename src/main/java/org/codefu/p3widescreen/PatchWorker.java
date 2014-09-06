@@ -63,9 +63,9 @@ class PatchWorker extends SwingWorker<Void, Void> {
     private final int width;
     private final int height;
 
-    public PatchWorker(String executablePath, int width, int height) {
-        executableFile = new File(executablePath);
-        File gameDirectory = executableFile.getParentFile();
+    public PatchWorker(String gameDirectoryPath, int width, int height) {
+        File gameDirectory = new File(gameDirectoryPath);
+        executableFile = new File(gameDirectory, "Patrician3.exe");
         dataArchiveFile = new File(gameDirectory, "p2arch0_eng.cpr");
         imagesDirectory = new File(gameDirectory, "images");
         scriptsDirectory = new File(gameDirectory, "scripts");

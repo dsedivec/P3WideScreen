@@ -19,35 +19,45 @@ import java.util.logging.LogRecord;
 
 import static javax.swing.SwingWorker.StateValue;
 
+// TODO: Set Mac app name
+// http://stackoverflow.com/q/3154638/2305480
+// https://developer.apple.com/library/mac/documentation/java/conceptual/java14development/07-nativeplatformintegration/nativeplatformintegration.html
 public class App
 {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
     private static java.util.logging.Logger packageLogger;
-    private static JTextField executableTextField;
+    private static JTextField gameDirectoryTextField;
     private static JTextField widthTextField;
     private static JTextField heightTextField;
     private static JButton patchButton;
 
     private static void createGUI() {
-        // TODO: Set order that tab moves through controls?
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException
+                 | InstantiationException
+                 | IllegalAccessException
+                 | UnsupportedLookAndFeelException e) {
+            // Well, just ignore it, I guess?  Logging not set up at
+            // this point, either.
+            e.printStackTrace();
+        }
         JPanel contentArea = new JPanel();
         contentArea.setLayout(new MigLayout());
-        contentArea.add(new JLabel("Patrician 3 executable:"));
-        executableTextField = new JTextField(20);
-        contentArea.add(executableTextField, "pushx, grow");
+        contentArea.add(new JLabel("Patrician 3 directory:"));
+        gameDirectoryTextField = new JTextField(20);
+        contentArea.add(gameDirectoryTextField, "pushx, grow");
         JButton selectExecutableButton = new JButton("Browse");
         // TODO: Browse needs to start at the file, if any, already entered
         // in the text box.
-        selectExecutableButton.addActionListener(App::browseForExecutable);
+        selectExecutableButton.addActionListener(App::browseForGameDirectory);
         contentArea.add(selectExecutableButton, "wrap");
         contentArea.add(new JLabel("Width:"), "align right");
-        widthTextField = new JTextField(4);
+        widthTextField = new JTextField("1280", 4);
         contentArea.add(widthTextField, "split");
         contentArea.add(new JLabel("Height:"));
-        heightTextField = new JTextField(4);
+        heightTextField = new JTextField("1024", 4);
         contentArea.add(heightTextField, "wrap");
-        // TODO: Don't enable patch button until all necessary fields are
-        // filled in.
         patchButton = new JButton("Patch");
         patchButton.addActionListener(App::handlePatchButton);
         contentArea.add(patchButton, "span, align center, wrap");
@@ -60,7 +70,6 @@ public class App
         JButton clearButton = new JButton("Clear log");
         clearButton.addActionListener(actionEvent -> logArea.setText(null));
         contentArea.add(clearButton, "span, align center, wrap");
-        // TODO: Set Mac app name?
         JFrame logWindow = new JFrame("Patrician 3 resolution patcher");
         logWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         logWindow.setContentPane(contentArea);
@@ -90,7 +99,7 @@ public class App
             return;
         }
         PatchWorker patchButtonWorker =
-            new PatchWorker(executableTextField.getText(), width, height);
+            new PatchWorker(gameDirectoryTextField.getText(), width, height);
         patchButtonWorker.addPropertyChangeListener(changeEvent -> {
             if (changeEvent.getPropertyName().equals("state")
                 && changeEvent.getNewValue() == StateValue.DONE) {
@@ -158,25 +167,30 @@ public class App
                              thread, exception));
     }
 
-    private static void browseForExecutable(ActionEvent actionEvent) {
+    private static void browseForGameDirectory(ActionEvent actionEvent) {
         JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Select your Patrician 3 executable");
+        fc.setDialogTitle("Select your Patrician 3 directory");
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fc.setAcceptAllFileFilterUsed(false);
+        // Hack to make JFileChooser show something in its stupid
+        // "File format" combo box.  I got this idea from Stack Overflow.
         fc.setFileFilter(new FileFilter() {
             @Override
             public boolean accept(File f) {
-                return f.getName().compareToIgnoreCase("patrician3.exe") == 0;
+                return f.isDirectory();
             }
 
             @Override
             public String getDescription() {
-                return "patrician3.exe";
+                return "Directories";
             }
         });
         int returnValue = fc.showOpenDialog(null);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
-            File executable = fc.getSelectedFile();
+            File gameDirectory = fc.getSelectedFile();
             try {
-                executableTextField.setText(executable.getCanonicalPath());
+                gameDirectoryTextField.setText(
+                    gameDirectory.getCanonicalPath());
             } catch (IOException e) {
                 throw new RuntimeException(
                     "failed to get path from file chooser", e);
