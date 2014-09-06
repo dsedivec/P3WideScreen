@@ -107,15 +107,16 @@ class PatchWorker extends SwingWorker<Void, Void> {
         if (!executableFile.canRead()) {
             logger.error("can't read executable file: {}", executableFile);
             checksPassed = false;
-        }
-        RandomAccessFile executable =
-            new RandomAccessFile(executableFile, "r");
-        for (DWordBinaryPatch patch : executablePatches) {
-            String patchError = patch.testPatch(executable);
-            if (patchError != null) {
-                logger.error("error patching {}: {}", executableFile,
-                             patchError);
-                checksPassed = false;
+        } else {
+            RandomAccessFile executable =
+                new RandomAccessFile(executableFile, "r");
+            for (DWordBinaryPatch patch : executablePatches) {
+                String patchError = patch.testPatch(executable);
+                if (patchError != null) {
+                    logger.error("error patching {}: {}", executableFile,
+                                 patchError);
+                    checksPassed = false;
+                }
             }
         }
         if (!dataArchiveFile.canRead()) {
@@ -203,6 +204,8 @@ class PatchWorker extends SwingWorker<Void, Void> {
             }
         }
         writeResizedImage(cprFile, WORLD_MAP_IMAGE_NAME, width, height);
+        // Note the relationships between these numbers and the INI
+        // changes.  I assume this is not a coincidence.
         writeResizedImage(cprFile, MAIN_SCREEN_IMAGE_NAME, 284, height - 600);
     }
 

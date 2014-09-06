@@ -70,33 +70,42 @@ public class App
         setUpLogging(logArea);
     }
 
-    private static void handlePatchButton(ActionEvent actionEvent) {
+    private static int getIntFromTextField(JTextField textField,
+                                            String title) {
         try {
-            patchButton.setEnabled(false);
-            PatchWorker patchButtonWorker = new PatchWorker(
-                executableTextField.getText(),
-                Integer.parseInt(widthTextField.getText()),
-                Integer.parseInt(heightTextField.getText()));
-            patchButtonWorker.addPropertyChangeListener(changeEvent -> {
-                if (changeEvent.getPropertyName().equals("state")
-                    && changeEvent.getNewValue() == StateValue.DONE) {
-                    packageLogger.info("patch control returned");
-                    patchButton.setEnabled(true);
-                    // Want to make sure no errors escape us.  XXX should
-                    // maybe do better here before release.
-                    try {
-                        patchButtonWorker.get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        logger.error("exception encountered during patching",
-                                     e);
-                    }
-                }
-            });
-            patchButtonWorker.execute();
-        } catch (Exception e) {
-            patchButton.setEnabled(true);
-            logger.error("exception while trying to start patching", e);
+            return Integer.parseInt(textField.getText());
+        } catch (NumberFormatException e) {
+            logger.error("invalid {}", title);
+            throw e;
         }
+    }
+
+    private static void handlePatchButton(ActionEvent actionEvent) {
+        int width, height;
+        try {
+            width = getIntFromTextField(widthTextField, "width");
+            height = getIntFromTextField(heightTextField, "height");
+        } catch (NumberFormatException e) {
+            // getIntFromTextField logged for us.
+            return;
+        }
+        PatchWorker patchButtonWorker =
+            new PatchWorker(executableTextField.getText(), width, height);
+        patchButtonWorker.addPropertyChangeListener(changeEvent -> {
+            if (changeEvent.getPropertyName().equals("state")
+                && changeEvent.getNewValue() == StateValue.DONE) {
+                logger.debug("patch control returned");
+                patchButton.setEnabled(true);
+                try {
+                    patchButtonWorker.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.error("exception encountered during patching",
+                                 e);
+                }
+            }
+        });
+        patchButton.setEnabled(false);
+        patchButtonWorker.execute();
     }
 
     private static void setUpLogging(JTextArea logArea) {
@@ -143,6 +152,10 @@ public class App
         });
         packageLogger.addHandler(handler);
         packageLogger.setUseParentHandlers(false);
+        Thread.setDefaultUncaughtExceptionHandler(
+            (thread, exception) ->
+                logger.error("uncaught exception on thread {}",
+                             thread, exception));
     }
 
     private static void browseForExecutable(ActionEvent actionEvent) {
