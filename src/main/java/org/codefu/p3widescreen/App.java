@@ -24,6 +24,9 @@ public class App
     private static final Logger logger = LoggerFactory.getLogger(App.class);
     private static java.util.logging.Logger packageLogger;
     private static JTextField executableTextField;
+    private static JTextField widthTextField;
+    private static JTextField heightTextField;
+    private static JButton patchButton;
 
     private static void createGUI() {
         // TODO: Set order that tab moves through controls?
@@ -33,26 +36,47 @@ public class App
         executableTextField = new JTextField(20);
         contentArea.add(executableTextField, "pushx, grow");
         JButton selectExecutableButton = new JButton("Browse");
-        // TODO: Really need a clear button.
         // TODO: Browse needs to start at the file, if any, already entered
         // in the text box.
         selectExecutableButton.addActionListener(App::browseForExecutable);
         contentArea.add(selectExecutableButton, "wrap");
         contentArea.add(new JLabel("Width:"), "align right");
-        JTextField width = new JTextField(4);
-        contentArea.add(width, "split");
+        widthTextField = new JTextField(4);
+        contentArea.add(widthTextField, "split");
         contentArea.add(new JLabel("Height:"));
-        JTextField height = new JTextField(4);
-        contentArea.add(height, "wrap");
+        heightTextField = new JTextField(4);
+        contentArea.add(heightTextField, "wrap");
         // TODO: Don't enable patch button until all necessary fields are
         // filled in.
-        JButton patchButton = new JButton("Patch");
-        patchButton.addActionListener(actionEvent -> {
+        patchButton = new JButton("Patch");
+        patchButton.addActionListener(App::handlePatchButton);
+        contentArea.add(patchButton, "span, align center, wrap");
+        JTextArea logArea = new JTextArea(24, 60);
+        logArea.setEditable(false);
+        logArea.setLineWrap(true);
+        logArea.setWrapStyleWord(true);
+        JScrollPane scrollPane = new JScrollPane(logArea);
+        contentArea.add(scrollPane, "span, pushy, grow, wrap");
+        JButton clearButton = new JButton("Clear log");
+        clearButton.addActionListener(actionEvent -> logArea.setText(null));
+        contentArea.add(clearButton, "span, align center, wrap");
+        // TODO: Set Mac app name?
+        JFrame logWindow = new JFrame("Patrician 3 resolution patcher");
+        logWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        logWindow.setContentPane(contentArea);
+        logWindow.pack();
+        logWindow.setMinimumSize(logWindow.getSize());
+        logWindow.setVisible(true);
+        setUpLogging(logArea);
+    }
+
+    private static void handlePatchButton(ActionEvent actionEvent) {
+        try {
             patchButton.setEnabled(false);
             PatchWorker patchButtonWorker = new PatchWorker(
                 executableTextField.getText(),
-                Integer.parseInt(width.getText()),
-                Integer.parseInt(height.getText()));
+                Integer.parseInt(widthTextField.getText()),
+                Integer.parseInt(heightTextField.getText()));
             patchButtonWorker.addPropertyChangeListener(changeEvent -> {
                 if (changeEvent.getPropertyName().equals("state")
                     && changeEvent.getNewValue() == StateValue.DONE) {
@@ -69,21 +93,10 @@ public class App
                 }
             });
             patchButtonWorker.execute();
-        });
-        contentArea.add(patchButton, "span, align center, wrap");
-        JTextArea logArea = new JTextArea(24, 40);
-        logArea.setEditable(false);
-        logArea.setLineWrap(true);
-        logArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(logArea);
-        contentArea.add(scrollPane, "span, pushy, grow");
-        JFrame logWindow = new JFrame("Patrician 3 resolution patcher");
-        logWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        logWindow.setContentPane(contentArea);
-        logWindow.pack();
-        logWindow.setMinimumSize(logWindow.getSize());
-        logWindow.setVisible(true);
-        setUpLogging(logArea);
+        } catch (Exception e) {
+            patchButton.setEnabled(true);
+            logger.error("exception while trying to start patching", e);
+        }
     }
 
     private static void setUpLogging(JTextArea logArea) {
@@ -93,6 +106,7 @@ public class App
                 // running the app twice.
                 String message = getFormatter().format(record);
                 logArea.append(message);
+                //noinspection ThrowableResultOfMethodCallIgnored
                 Throwable throwable = record.getThrown();
                 if (throwable != null) {
                     StringWriter stringWriter = new StringWriter();
@@ -161,6 +175,7 @@ public class App
         // Set log level for our whole package.
         String packageName = App.class.getPackage().getName();
         packageLogger = java.util.logging.Logger.getLogger(packageName);
+        // TODO: Reduce log level?
         packageLogger.setLevel(Level.FINEST);
         // Hand it over to Swing.
         SwingUtilities.invokeLater(App::createGUI);
