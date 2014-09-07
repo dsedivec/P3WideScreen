@@ -208,8 +208,7 @@ public class App
         // Set log level for our whole package.
         String packageName = App.class.getPackage().getName();
         packageLogger = java.util.logging.Logger.getLogger(packageName);
-        // TODO: Reduce log level?
-        packageLogger.setLevel(Level.FINEST);
+        //packageLogger.setLevel(Level.FINEST);
         // Hand it over to Swing.
         SwingUtilities.invokeLater(App::createGUI);
     }
