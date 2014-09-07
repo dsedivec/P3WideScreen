@@ -27,6 +27,18 @@ This will patch the Patrician 3 game to use a resolution that you select instead
 While the menus may be at a different resolution, once you're actually playing the game, you should be at your selected resolution instead of 1280x1024.
 
 
+## If Things Go Wrong
+
+To go back to regular 1280x1024:
+
+1. Look at the log output.  This tool will tell you when it backs up a file and what name it is using for the backup.  Restore the backup P3WideScreen made of the `Patrician3.exe` file.  (Quite likely `Patrician3.exe.bak`, unless that file already existed.)  If you've lost the log output, try sorting by date and looking for the most recent `Patrician3.exe*.bak` file created in your Patrician 3 directory.
+2. Delete the following files from your Patrician 3 directory:
+    * `images/HauptscreenE1280.bmp`
+    * `images/Vollansichtskarte1280.bmp`
+    * `scripts/accelMap.ini`
+    * `scripts/screenGame.ini`
+    * `scripts/textures.ini`
+
 ## Credits
 
 All credit for this goes to the people who figured out how to patch this game in the first place.  That seems primarily to be [brotkohl at some German Patrician forum][brotkohl].  Thanks to [billyplod at the Kalypso Media forums][billyplod] for translating that.  Thanks to [whatnames at the Widescreen Gaming Forum][whatnames] for trying to pull together all the various sources of information about how to patch this game, and for detailing how he applied them to the GOG release of Patrician 3.
