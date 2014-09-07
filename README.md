@@ -16,9 +16,9 @@ This will patch the Patrician 3 game to use a resolution that you select instead
 3. [Install a Java 8 JRE][java-8] or JDK, if you don't have one installed already.  **It must be Java version 8 or later!**
 4. [Download the latest `P3WideScreen.jar` file][P3WideScreen.jar].
 5. Run the `P3WideScreen.jar` file (hopefully you can just double click it, or else `java -jar P3WideScreen.jar`):
-     a. Select the directory where you have installed Patrician 3.
-     b. Enter in the resolution you'd like to use instead of 1280x1024.
-     c. Hit the patch button.
+     1. Select the directory where you have installed Patrician 3.
+     2. Enter in the resolution you'd like to use instead of 1280x1024.
+     3. Hit the patch button.
 6. Run Patrician 3 and select the 1280x1024 resolution.
 
 [java-8]: http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
